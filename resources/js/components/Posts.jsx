@@ -91,12 +91,14 @@ function Posts() {
                             })}
                         </ul>
                         <div>
-                            {post.comments && Array.isArray(post.comments) && post.comments.map(function (comment) {
+                            {post.comments && Array.isArray(post.comments) && post.comments
+                                .filter(comment => comment.parent_comment_id == null)
+                                .map(function (comment) {
                                 let commentId = comment.id;
                                 return (
                                     <>
                                         <div key={comment.id}>
-                                        <p>{comment.content}</p>
+                                            <p>{comment.content}</p>
                                         <button onClick={() => handleReplyClick(comment.id)}>Reply</button>
                                         {!isReplying && (
                                             <div>
