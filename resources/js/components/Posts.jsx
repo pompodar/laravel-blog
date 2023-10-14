@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 
 function Posts() {
     const [data, setData] = useState([]);
-    const [comment, setComment] = useState('');
+    const [comments, setComments] = useState({}); // Use an object to store comments by comment ID
     const commentInputRef = useRef(null);
     const [replyToCommentId, setReplyToCommentId] = useState(null);
     const [commentLevel, setCommentLevel] = useState(0);
@@ -50,6 +50,10 @@ function Posts() {
                 return response.json();
             })
             .then((newComment) => {
+                setComments((prevComments) => ({
+                    ...prevComments,
+                    [newComment.id]: '', // Initialize the new comment with an empty string
+                }));
                 setData((prevData) => {
                     const newData = prevData.map((post) => {
                         if (post.id === postId) {
@@ -63,8 +67,6 @@ function Posts() {
                     return newData;
                 });
 
-                setComment('');
-                commentInputRef.current.value = '';
                 setReplyToCommentId(null);
             })
             .catch((error) => console.error('Error submitting comment:', error));
@@ -74,55 +76,50 @@ function Posts() {
         setReplyToCommentId(commentId);
     };
 
-    let level = 0;
-
-    const Comment = ({ post, parent, handleReplyClick, handleCommentSubmit, commentInputRef, replyToCommentId, level }) => {
+    const Comment = ({ post, parent, handleReplyClick, commentId, commentInputRef, replyToCommentId, level }) => {
         let postId = post;
         let postIdId = post.id;
 
         return (
-            <div key={post.id}
-                style={{
-                    marginLeft: 20 * level,
-                }}
-            >
-                {post.comments && 
+            <div key={post.id} style={{ marginLeft: 20 * level }}>
+                {post.comments &&
                     post.comments
                         .filter((reply) => reply.parent_comment_id === parent)
-                    .map((reply) => (
-                        <>
-                            <p>{reply.content}</p>
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    handleCommentSubmit(postIdId, reply.id, comment);
-                                }}
-                            >
-                                <label
-                                    htmlFor="comment">
-                                    <input
-                                        type="text"
-                                        name="comment"
-                                        onChange={(e) => setComment(e.target.value)}
-                                        value={comment}
-                                    />
-                                </label>
-                                <button type="submit">Submit Comment</button>
-                            </form>
-                            <Comment
-                                key={reply.id}
-                                parent={reply.id}
-                                post={postId}
-                                handleReplyClick={handleReplyClick}
-                                handleCommentSubmit={handleCommentSubmit}
-                                commentInputRef={commentInputRef}
-                                replyToCommentId={replyToCommentId}
-                                level={level + 1}
-                                style={{
-                                    marginLeft: 100,
-                                backgroundColor: "red"}}
-                            />
-                        </>
+                        .map((reply) => (
+                            <div key={reply.id}>
+                                <p>{reply.content}</p>
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        handleCommentSubmit(postIdId, reply.id, comments[reply.id]);
+                                    }}
+                                >
+                                    <label htmlFor={`comment-${reply.id}`}>
+                                        <input
+                                            type="text"
+                                            name={`comment-${reply.id}`}
+                                            ref={commentInputRef}
+                                            onChange={(e) => setComments({ ...comments, [reply.id]: e.target.value })}
+                                            value={comments[reply.id]}
+                                        />
+                                    </label>
+                                    <button type="submit">Submit Comment</button>
+                                </form>
+                                <Comment
+                                    key={reply.id}
+                                    parent={reply.id}
+                                    post={postId}
+                                    handleReplyClick={handleReplyClick}
+                                    commentId={reply.id}
+                                    commentInputRef={commentInputRef}
+                                    replyToCommentId={replyToCommentId}
+                                    level={level + 1}
+                                    style={{
+                                        marginLeft: 100,
+                                        backgroundColor: "red"
+                                    }}
+                                />
+                            </div>
                         ))}
             </div>
         );
@@ -145,7 +142,7 @@ function Posts() {
                             post={post}
                             parent={null}
                             handleReplyClick={handleReplyClick}
-                            handleCommentSubmit={handleCommentSubmit}
+                            commentId={null}
                             commentInputRef={commentInputRef}
                             replyToCommentId={replyToCommentId}
                             level={0} // Initialize comment level as 0
@@ -153,16 +150,16 @@ function Posts() {
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
-                                handleCommentSubmit(post.id, null, comment);
+                                handleCommentSubmit(post.id, null, comments[null]);
                             }}
                         >
-                            <label htmlFor="comment">
+                            <label htmlFor={`comment-${null}`}>
                                 <input
                                     type="text"
-                                    name="comment"
+                                    name={`comment-${null}`}
                                     ref={commentInputRef}
-                                    onChange={(e) => setComment(e.target.value)}
-                                    value={comment}
+                                    onChange={(e) => setComments({ ...comments, [null]: e.target.value })}
+                                    value={comments[null]}
                                 />
                             </label>
                             <button type="submit">Submit Comment</button>
