@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
 
 function Posts() {
     const [data, setData] = useState([]);
     const [comment, setComment] = useState('');
     const commentInputRef = useRef(null);
     const [replyToCommentId, setReplyToCommentId] = useState(null);
-    const [isReplying, setIsReplying] = useState(false);
+    const [commentLevel, setCommentLevel] = useState(0);
 
     useEffect(() => {
         // Fetch data when the component mounts
@@ -23,16 +23,16 @@ function Posts() {
             .catch((error) => console.error('Error fetching data:', error));
     }, []);
 
-    const handleCommentSubmit = (postId, reply) => {
+    const handleCommentSubmit = (postId, parentCommentId, reply) => {
         // Get the CSRF token from the meta tag
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         const requestBody = {
             content: reply,
-            parent_comment_id: replyToCommentId,
+            parent_comment_id: parentCommentId,
         };
 
-        console.log(requestBody);
+        console.log(postId);
 
         // Send the comment to the Laravel backend
         fetch(`/posts/${postId}/comments`, {
@@ -72,7 +72,60 @@ function Posts() {
 
     const handleReplyClick = (commentId) => {
         setReplyToCommentId(commentId);
-        setIsReplying(true);
+    };
+
+    let level = 0;
+
+    const Comment = ({ post, parent, handleReplyClick, handleCommentSubmit, commentInputRef, replyToCommentId, level }) => {
+        let postId = post;
+        let postIdId = post.id;
+
+        return (
+            <div key={post.id}
+                style={{
+                    marginLeft: 20 * level,
+                }}
+            >
+                {post.comments && 
+                    post.comments
+                        .filter((reply) => reply.parent_comment_id === parent)
+                    .map((reply) => (
+                        <>
+                            <p>{reply.content}</p>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleCommentSubmit(postIdId, reply.id, comment);
+                                }}
+                            >
+                                <label
+                                    htmlFor="comment">
+                                    <input
+                                        type="text"
+                                        name="comment"
+                                        onChange={(e) => setComment(e.target.value)}
+                                        value={comment}
+                                    />
+                                </label>
+                                <button type="submit">Submit Comment</button>
+                            </form>
+                            <Comment
+                                key={reply.id}
+                                parent={reply.id}
+                                post={postId}
+                                handleReplyClick={handleReplyClick}
+                                handleCommentSubmit={handleCommentSubmit}
+                                commentInputRef={commentInputRef}
+                                replyToCommentId={replyToCommentId}
+                                level={level + 1}
+                                style={{
+                                    marginLeft: 100,
+                                backgroundColor: "red"}}
+                            />
+                        </>
+                        ))}
+            </div>
+        );
     };
 
     return (
@@ -85,63 +138,22 @@ function Posts() {
                         <p>{post.content}</p>
                         <ul>
                             {post.authors.map(function (author) {
-                                return (
-                                    <h3 key={author.id}>Author: {author.name}</h3>
-                                );
+                                return <h3 key={author.id}>Author: {author.name}</h3>;
                             })}
                         </ul>
-                        <div>
-                            {post.comments && Array.isArray(post.comments) && post.comments
-                                .filter(comment => comment.parent_comment_id == null)
-                                .map(function (comment) {
-                                let commentId = comment.id;
-                                return (
-                                    <>
-                                        <div key={comment.id}>
-                                            <p>{comment.content}</p>
-                                        <button onClick={() => handleReplyClick(comment.id)}>Reply</button>
-                                        {!isReplying && (
-                                            <div>
-                                                <input
-                                                    type="text"
-                                                    ref={commentInputRef}
-                                                    onChange={(e) => setComment(e.target.value)}
-                                                />
-                                                <button
-                                                    onClick={() => handleCommentSubmit(post.id, comment)}
-                                                >
-                                                    Submit Reply
-                                                </button>
-                                            </div>
-                                        )}
-                                        </div>
-                                        {post.comments && Array.isArray(post.comments) && post.comments
-                                            .filter(comment => commentId === comment.parent_comment_id)
-                                            .map(comment => (
-                                                <div key={comment.id}>
-                                                    <p>{comment.content}</p>
-                                                    <button onClick={() => handleReplyClick(comment.id)}>Reply</button>
-                                                    <div style={{ backgroundColor: "red" }}>
-                                                        <input
-                                                            type="text"
-                                                            ref={commentInputRef}
-                                                            onChange={(e) => setComment(e.target.value)}
-                                                        />
-                                                        <button onClick={() => handleCommentSubmit(post.id, comment)}>
-                                                            Submit Reply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        }
-                                    </>
-                                );
-                            })}
-                                                    </div>
+                        <Comment
+                            post={post}
+                            parent={null}
+                            handleReplyClick={handleReplyClick}
+                            handleCommentSubmit={handleCommentSubmit}
+                            commentInputRef={commentInputRef}
+                            replyToCommentId={replyToCommentId}
+                            level={0} // Initialize comment level as 0
+                        />
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
-                                handleCommentSubmit(post.id, comment);
+                                handleCommentSubmit(post.id, null, comment);
                             }}
                         >
                             <label htmlFor="comment">
