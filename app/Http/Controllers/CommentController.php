@@ -17,6 +17,7 @@ class CommentController extends Controller
         // Create a new comment
         $comment = new Comment;
         $comment->user_id = auth()->user()->id; // Assuming you have user authentication
+        $comment->author_name = auth()->user()->name; // Assuming you have user authentication
         $comment->post_id = $post;
         $comment->parent_comment_id = $request->input('parent_comment_id'); // Set the parent comment ID
         $comment->content = $request->input('content');

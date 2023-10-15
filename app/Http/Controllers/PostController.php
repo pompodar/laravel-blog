@@ -22,7 +22,21 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // Validate the request data
+        $request->validate([
+            'title' => 'required',
+            'content' => 'required',
+        ]);
+
+        // Create a new post
+        $post = new Post;
+        $post->category_id = '1';
+        $post->title = $request->input('title'); 
+        $post->content = $request->input('content');
+        $post->tags = [];
+        $post->save();
+
+        return response()->json($post, 201); 
     }
 
     /**

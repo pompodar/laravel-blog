@@ -27,3 +27,5 @@ Route::resource('posts', PostController::class);
 
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->middleware('auth');
 
+Route::post('/posts/new-post', [PostController::class, 'store'])->middleware('auth');
+
