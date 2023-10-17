@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 
-import Comment from './Comment';
-
 function PostForm({ onPostCreated }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -59,8 +57,10 @@ function PostForm({ onPostCreated }) {
 function Posts() {
     const [data, setData] = useState([]);
     const [comments, setComments] = useState({});
+    const commentInputRef = useRef(null);
     const [replyToCommentId, setReplyToCommentId] = useState(null);
     const [hiddenComments, setHiddenComments] = useState({});
+    const [title, setTitle] = useState('');
 
     const fetchData = () => {
         fetch('/posts')
@@ -87,25 +87,6 @@ function Posts() {
         fetchData();
     }, []);
 
-    
-    const handleInputChange = (commentId, value) => {
-        setComments((prevComments) => ({
-            ...prevComments,
-            [commentId]: value,
-        }));
-    };
-
-    const handleReplyClick = (commentId) => {
-        setReplyToCommentId(commentId);
-    };
-
-    const toggleCommentVisibility = (postId) => {
-        setHiddenComments((prevHiddenComments) => ({
-            ...prevHiddenComments,
-            [postId]: !prevHiddenComments[postId],
-        }));
-    };
-
     const handleCommentSubmit = (postId, parentCommentId, reply) => {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -131,20 +112,10 @@ function Posts() {
                 return response.json();
             })
             .then((newComment) => {
-                console.log(parentCommentId, newComment.id);
-                if (parentCommentId == null) {
-                    setComments((prevComments) => ({
-                        ...prevComments,
-                        [postId]: '',
-                    }));
-                } else {
-                    setComments((prevComments) => ({
-                        ...prevComments,
-                        [parentCommentId]: '',
-                    }));
-                }
-
-                console.log(comments);
+                setComments((prevComments) => ({
+                    ...prevComments,
+                    [newComment.id]: '',
+                }));
 
                 // Fetch the updated posts data, which now includes the new comment
                 fetchData();
@@ -153,7 +124,84 @@ function Posts() {
             })
             .catch((error) => console.error('Error submitting comment:', error));
     };
-    
+
+    const handleInputChange = (commentId, value) => {
+        setComments((prevComments) => ({
+            ...prevComments,
+            [commentId]: value,
+        }));
+    };
+
+    const handleReplyClick = (commentId) => {
+        setReplyToCommentId(commentId);
+    };
+
+    const toggleCommentVisibility = (postId) => {
+        setHiddenComments((prevHiddenComments) => ({
+            ...prevHiddenComments,
+            [postId]: !prevHiddenComments[postId],
+        }));
+    };
+
+    const Comment = ({ fetchData, post, parent, handleReplyClick, commentId, commentInputRef, replyToCommentId, level }) => {
+        const postIdId = post.id;
+
+        const handleCommentInputChange = (e, replyId) => {
+            const value = e.target.value;
+            setComments((prevComments) => ({
+                ...prevComments,
+                [replyId]: value,
+            }));
+        };
+
+        return (
+            <div key={post.id} style={{ marginLeft: 20 * level + 6 }}>
+                <button onClick={() => toggleCommentVisibility(post.id)}>
+                    {hiddenComments[post.id] ? 'Show Comments' : 'Hide Comments'}
+                </button>
+                {!hiddenComments[post.id] && (
+                    <>
+                        {post.comments &&
+                            post.comments
+                                .filter((reply) => reply.parent_comment_id === parent)
+                                .map((reply) => (
+                                    <div key={reply.id}>
+                                        <p>{reply.content}</p>
+                                        <p>Author: {reply.author_name}</p>
+                                        <form
+                                            onSubmit={(e) => {
+                                                e.preventDefault();
+                                                handleCommentSubmit(postIdId, reply.id, comments[reply.id]);
+                                            }}
+                                        >
+                                            <label htmlFor={`comment-${reply.id}`}>
+                                                <input
+                                                    type="text"
+                                                    name={`comment-${reply.id}`}
+                                                    onChange={(e) => handleCommentInputChange(e, reply.id)}
+                                                    value={comments[reply.id]}
+                                                />
+                                            </label>
+                                            <button type="submit">Submit Comment</button>
+                                        </form>
+                                        <Comment
+                                            key={reply.id}
+                                            parent={reply.id}
+                                            post={post}
+                                            handleReplyClick={handleReplyClick}
+                                            commentId={reply.id}
+                                            commentInputRef={commentInputRef}
+                                            replyToCommentId={replyToCommentId}
+                                            level={level + 1}
+                                        />
+                                    </div>
+                                ))}
+                    </>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div>
             <h1>Create a New Post:</h1>
@@ -173,11 +221,9 @@ function Posts() {
                             post={post}
                             fetchData={fetchData}
                             parent={null}
-                            handleCommentSubmit={handleCommentSubmit}
-                            comments={comments}
-                            setComments={setComments}
                             handleReplyClick={handleReplyClick}
                             commentId={null}
+                            commentInputRef={commentInputRef}
                             replyToCommentId={replyToCommentId}
                             level={0}
                         />
@@ -191,6 +237,7 @@ function Posts() {
                                 <input
                                     type="text"
                                     name={`comment-${post.id}`}
+                                    ref={commentInputRef}
                                     onChange={(e) => handleInputChange(post.id, e.target.value)}
                                     value={comments[post.id]}
                                 />
