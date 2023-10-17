@@ -169,18 +169,25 @@ function Posts() {
                                 return <h3 key={author.id}>Author: {author.name}</h3>;
                             })}
                         </ul>
-                        <Comment
-                            post={post}
-                            fetchData={fetchData}
-                            parent={null}
-                            handleCommentSubmit={handleCommentSubmit}
-                            comments={comments}
-                            setComments={setComments}
-                            handleReplyClick={handleReplyClick}
-                            commentId={null}
-                            replyToCommentId={replyToCommentId}
-                            level={0}
-                        />
+                        <button
+                            onClick={() => toggleCommentVisibility(post.id)}
+                        >
+                            {!hiddenComments ? "Hide comments" : "Show comments"}
+                        </button>
+                        {!hiddenComments[post.id] &&
+                            <Comment
+                                post={post}
+                                fetchData={fetchData}
+                                parent={null}
+                                handleCommentSubmit={handleCommentSubmit}
+                                comments={comments}
+                                setComments={setComments}
+                                handleReplyClick={handleReplyClick}
+                                commentId={null}
+                                replyToCommentId={replyToCommentId}
+                                level={0}
+                            />
+                        }
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
