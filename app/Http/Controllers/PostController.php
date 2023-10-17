@@ -10,9 +10,15 @@ class PostController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $posts = Post::with('authors', 'comments')->get();
+        // Get the page number from the request, default to 1 if not specified
+        $page = $request->input('page', 1);
+        // Define the number of posts per page
+        $perPage = 1; // Change this number as needed
+
+        // Query the database and paginate the results
+        $posts = Post::with('authors', 'comments')->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json($posts);
     }
