@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Post;
+use Image; // Import the Intervention Image class
 
 class PostController extends Controller
 {
@@ -32,24 +33,32 @@ class PostController extends Controller
         $request->validate([
             'title' => 'required',
             'content' => 'required',
-            // 'thumbnail' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust validation rules as needed
+            'thumbnail' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust validation rules as needed
         ]);
 
         // Create a new post
         $post = new Post;
-        $post->category_id = '1';
-        $post->title = $request->input('title'); 
+        $post->category_id = 1;
+        $post->title = $request->input('title');
         $post->content = $request->input('content');
 
         $fileName = time() . '.' . $request->thumbnail->extension();
-        //$request->thumbnail->storePubliclyAs('/public/images', $fileName);
         $request->thumbnail->move(public_path('uploads'), $fileName);
+
+        // Check if the image dimensions are larger than 320x240 pixels before resizing
+        $image = Image::make(public_path('uploads/' . $fileName));
+        if ($image->width() > 320 || $image->height() > 240) {
+            $image->resize(320, 240, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+        }
+        $image->save(public_path('uploads/' . $fileName));
 
         $post->thumbnail = '/uploads/' . $fileName; // Store the image path in your database
         $post->tags = [];
         $post->save();
 
-        return response()->json($post, 201); 
+        return response()->json($post, 201);
     }
 
     /**
@@ -57,7 +66,7 @@ class PostController extends Controller
      */
     public function show(string $id)
     {
-        //
+        // Implementation for displaying an individual post
     }
 
     /**
@@ -65,7 +74,7 @@ class PostController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        // Implementation for updating an individual post
     }
 
     /**
@@ -73,6 +82,6 @@ class PostController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        // Implementation for deleting an individual post
     }
 }
