@@ -32,6 +32,7 @@ class PostController extends Controller
         $request->validate([
             'title' => 'required',
             'content' => 'required',
+            // 'thumbnail' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust validation rules as needed
         ]);
 
         // Create a new post
@@ -39,6 +40,12 @@ class PostController extends Controller
         $post->category_id = '1';
         $post->title = $request->input('title'); 
         $post->content = $request->input('content');
+
+        $fileName = time() . '.' . $request->thumbnail->extension();
+        //$request->thumbnail->storePubliclyAs('/public/images', $fileName);
+        $request->thumbnail->move(public_path('uploads'), $fileName);
+
+        $post->thumbnail = '/uploads/' . $fileName; // Store the image path in your database
         $post->tags = [];
         $post->save();
 

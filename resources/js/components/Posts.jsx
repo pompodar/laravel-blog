@@ -21,6 +21,7 @@ function Posts() {
                 return response.json();
             })
             .then((responseData) => {
+                console.log(responseData.data);
                 setData(responseData.data); // Set the post data
                 setTotalPages(responseData.last_page); // Set the total number of pages
                 
@@ -132,6 +133,7 @@ function Posts() {
                     <div key={post.id}>
                         <h2>{post.title}</h2>
                         <p>{post.content}</p>
+                        <img src={post.thumbnail} />
                         <ul>
                             {post.authors && post.authors.map(function (author) {
                                 return <h3 key={author.id}>Author: {author.name}</h3>;
@@ -169,7 +171,7 @@ function Posts() {
                                     type="text"
                                     name={`comment-${post.id}`}
                                     onChange={(e) => handleInputChange(post.id, e.target.value)}
-                                    value={comments[post.id]}
+                                    value={comments[post.id] || ''}
                                 />
                             </label>
                             <button type="submit">Submit Comment</button>

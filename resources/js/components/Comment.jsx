@@ -42,7 +42,7 @@ export default function Comment ({ handleCommentSubmit, fetchData, post, parent,
                                                 onChange={(e) =>
                                                     setComments({ ...comments, [reply.id]: e.target.value })
                                                 }
-                                                value={comments[reply.id]}
+                                                value={comments[reply.id] || ''}
                                             />
                                         </label>
                                         <button type="submit">Submit Comment</button>
